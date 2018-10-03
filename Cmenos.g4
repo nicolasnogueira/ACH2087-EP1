@@ -120,7 +120,11 @@ args
 arglist
 	:	arglist VIRG expr
 	|	expr 
-	;	
+	;
+
+BLOCOCOMENT : '/*' .*? '*/' -> skip;
+
+WS : [ \n\t\r]+ -> channel(HIDDEN);
 
 INT : 'int';
 VOID : 'void';
