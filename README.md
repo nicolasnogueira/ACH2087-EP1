@@ -2,7 +2,7 @@
 
 EP1 de ACH2087 - Construção de Compiladores
 
-Nícolas Nogueira
+Nícolas Nogueira  
 Victor Emerenciano
 
 Referências
