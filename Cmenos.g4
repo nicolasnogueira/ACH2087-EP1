@@ -13,30 +13,30 @@ decl
 	| 	fundecl 
 	;
 vardecl
-	: 	tipo ID PONTOVIRG
-	|	tipo ID COLCHESQ NUM COLCHDIR PONTOVIRG 
+	: 	tipo ID ';'
+	|	tipo ID '[' NUM ']' ';' 
 	;
 tipo
-	:	INT
-	|	VOID 
+	:	'int'
+	|	'void' 
 	;
 fundecl
-	:	tipo ID PARENESQ params PARENDIR compdecl 
+	:	tipo ID '(' params ')' compdecl 
 	;
 params
 	: 	paramlist
-	|	VOID
+	|	'void'
 	;
 paramlist
-	: 	paramlist VIRG param
+	: 	paramlist ',' param
 	|	param 
 	;
 param
 	:	tipo ID
-	|	tipo ID COLCHESQ COLCHDIR
+	|	tipo ID '[' ']'
 	;
 compdecl
-	: 	CHAVEESQ locdecl stmtlist CHAVEDIR 
+	: 	'{' locdecl stmtlist '}' 
 	;
 locdecl
 	:	locdecl vardecl
@@ -54,108 +54,77 @@ stmt
 	|	retdecl 
 	;
 exprdecl
-	:	expr PONTOVIRG
-	|	PONTOVIRG
+	:	expr ';'
+	|	';'
 	;
 seldecl
-	:	IF PARENESQ expr PARENDIR stmt
-	|	IF PARENESQ expr PARENDIR stmt ELSE stmt 
+	:	'if' '(' expr ')' stmt
+	|	'if' '(' expr ')' stmt 'else' stmt 
 	;
 iterdecl
-	:	WHILE PARENESQ expr PARENDIR stmt 
+	:	'while' '(' expr ')' stmt 
 	;
 retdecl
-	:	RETURN PONTOVIRG
-	|	RETURN expr PONTOVIRG 
+	:	'return' ';'
+	|	'return' expr ';' 
 	;
 expr
-	:	var ATRIBUI expr
+	:	var '=' expr
 	|	simpexpr 
 	;
 var
 	:	ID
-	|	ID COLCHESQ expr COLCHDIR 
+	|	ID '[' expr ']' 
 	;
 simpexpr
 	:	somaexpr rel somaexpr
 	|	somaexpr 
 	;
 rel
-	: 	MENORIGUAL
-	|	MENOR
-	|	MAIOR
-	|	MAIORIGUAL
-	|	IGUAL
-	|	DIFERENTE
+	: 	'<='
+	|	'<'
+	|	'>'
+	|	'>='
+	|	'=='
+	|	'!='
 	;
 somaexpr
 	:	somaexpr soma termo
 	|	termo 
 	;
 soma
-	:	MAIS
-	|	MENOS
+	:	'+'
+	|	'-'
 	;
 termo
 	:	termo mult fator
 	|	fator 
 	;
 mult
-	:	MULT
-	|	DIV
+	:	'*'
+	|	'/'
 	;
 fator
-	:	PARENESQ expr PARENDIR
+	:	'(' expr ')'
 	|	var
 	|	ativ
 	|	NUM 
 	;
 ativ
-	:	ID PARENESQ args PARENDIR 
+	:	ID '(' args ')' 
 	;
 args
 	:	arglist
 	|	
 	;
 arglist
-	:	arglist VIRG expr
+	:	arglist ',' expr
 	|	expr 
 	;
 
 BLOCOCOMENT : '/*' .*? '*/' -> skip;
 
 WS : [ \n\t\r]+ -> channel(HIDDEN);
-
-INT : 'int';
-VOID : 'void';
-
-IF : 'if';
-ELSE : 'else';
-WHILE : 'while'; 
-RETURN : 'return';
-
-PONTOVIRG :	';';
-VIRG :	',';
-PARENESQ : '(';
-PARENDIR : ')';
-COLCHESQ : '[';
-COLCHDIR : ']';
-CHAVEESQ : '{';
-CHAVEDIR : '}';
-
-ATRIBUI : '=';
-
-MENORIGUAL: '<=';
-MENOR: '<';
-MAIOR: '>';
-MAIORIGUAL: '>=';
-IGUAL: '==';
-DIFERENTE: '!='; 
-
-MULT : '*';
-DIV : '/';
-MAIS : '+';
-MENOS : '-';
 
 ID	:	[a-zA-Z]+;
 NUM	:	[0-9]+;
