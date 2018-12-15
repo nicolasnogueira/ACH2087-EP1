@@ -62,13 +62,19 @@ seldecl
 	|	iffirstpart ifsecondpart 
 	;
 iffirstpart
-	:	'if' '(' expr ')' stmt
+	:	 iffirstpartcond stmt
+	;
+iffirstpartcond
+	:	'if' '(' expr ')'
 	;
 ifsecondpart
 	:	'else' stmt
 	;
 iterdecl
-	:	'while' '(' expr ')' stmt 
+	:	whilefirstpart stmt 
+	;
+whilefirstpart
+	:	'while' '(' expr ')'
 	;
 retdecl
 	:	'return' ';'

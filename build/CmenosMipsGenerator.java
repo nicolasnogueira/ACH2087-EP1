@@ -44,6 +44,8 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	@Override public void enterSeldecl(CmenosParser.SeldeclContext ctx) {
 		// colocando o index do if correpondente a este nó
 		values.put(ctx, ifcount);
+		System.out.println();
+		System.out.println();
 		System.out.println("If_" + ifcount + ":");
 		ifcount++;
 
@@ -64,13 +66,13 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterIffirstpart(CmenosParser.IffirstpartContext ctx) {
+	@Override public void enterIffirstpartcond(CmenosParser.IffirstpartcondContext ctx) {
 		System.out.println("\tResolve condição.");
-		ParserRuleContext ctxParent = ctx.getParent();
-		int id = values.get(ctxParent);
-		if (ctxParent.getChildCount() == 2) {
+		ParserRuleContext ctxGParent = ctx.getParent().getParent();
+		int id = values.get(ctxGParent);
+		if (ctxGParent.getChildCount() == 2) {
 			// estamos em um if com else
-			// isto é apenas uma simplificação
+			// isto é apenas uma simplificação, deve ser feito depois na parte da condição
 			System.out.println("\tbeq\t reg1, reg2, ElseIf_" + id  + " # se falso vai para else");
 		} else {
 			// estamos em um if sem else
@@ -101,6 +103,8 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	@Override public void enterIterdecl(CmenosParser.IterdeclContext ctx) { 
 		// colocando o index do if correpondente a este nó
 		values.put(ctx, whilecount);
+		System.out.println();
+		System.out.println();
 		System.out.println("While_" + whilecount + ":");
 		whilecount++;
 	}
@@ -112,7 +116,44 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	@Override public void exitIterdecl(CmenosParser.IterdeclContext ctx) { 
 		int id = values.get(ctx);
 		System.out.println("\tj While_" + id);
+		System.out.println();
+		System.out.println();
 		System.out.println("EndWhile_ " + id + ":");
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitWhilefirstpart(CmenosParser.WhilefirstpartContext ctx) {
+		System.out.println("\tResolve condição.");
+		ParserRuleContext ctxParent = ctx.getParent();
+		int id = values.get(ctxParent);
+		System.out.println("\tbeq\t reg1, reg2, EndWhile_" + id  + " # se falso vai para o fim do while");
+	}
+
+
+	// FUNCAO
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFundecl(CmenosParser.FundeclContext ctx) {
+		System.out.println();
+		System.out.println();
+		System.out.println(ctx.getChild(1).getText() + ":");
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFundecl(CmenosParser.FundeclContext ctx) { 
+		System.out.println("\tjr\t$ra");
 	}
 
 
