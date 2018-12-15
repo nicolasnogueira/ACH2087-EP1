@@ -4,7 +4,7 @@ import java.io.*;
 
 public class CmenosMips {
     public static void main(String[] args) throws IOException {
-        InputStream is = new FileInputStream("../../input2"); // or System.in;
+        InputStream is = new FileInputStream(System.getProperty("user.dir") + "/input"); // or System.in;
         ANTLRInputStream input = new ANTLRInputStream(is);
         CmenosLexer lexer = new CmenosLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
