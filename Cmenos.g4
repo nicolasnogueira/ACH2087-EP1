@@ -58,8 +58,14 @@ exprdecl
 	|	';'
 	;
 seldecl
+	:	iffirstpart
+	|	iffirstpart ifsecondpart 
+	;
+iffirstpart
 	:	'if' '(' expr ')' stmt
-	|	'if' '(' expr ')' stmt 'else' stmt 
+	;
+ifsecondpart
+	:	'else' stmt
 	;
 iterdecl
 	:	'while' '(' expr ')' stmt 
@@ -123,6 +129,8 @@ arglist
 	;
 
 BLOCOCOMENT : '/*' .*? '*/' -> skip;
+
+LINHACOMENT : '//' .*? '\n' -> skip;
 
 WS : [ \n\t\r]+ -> channel(HIDDEN);
 
