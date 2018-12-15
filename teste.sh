@@ -15,6 +15,12 @@ elif [ "$1" = "tree" ]; then
 elif [ "$1" = "exec" ]; then
 	java -cp $(pwd)/build/cbuild/:/usr/local/lib/antlr-4.7.1-complete.jar:. CmenosMips
 
+elif [ "$1" = "clean-all" ]; then
+	rm $(pwd)/build/*.java -f
+	rm $(pwd)/build/*.tokens -f
+	rm $(pwd)/build/*.interp -f
+	rm $(pwd)/build/cbuild/*.class -f
+
 elif [ "$1" = "path" ]; then
 
 	if [ ! -d $(pwd)"/build" ]; then
@@ -31,7 +37,9 @@ elif [ "$1" = "help" ]; then
 	echo '$ ./teste.sh path \t //check directory struct '
 	echo '$ ./teste.sh antlr4 \t //generate project glc \(Cmenos.g4\)'
 	echo '$ ./teste.sh compile \t //compile project glc \(Cmenos.g4\)'
-	echo '$ ./teste.sh exec \t //run project glc \(Cmenos.g4\)'
+	echo '$ ./teste.sh tree \t //run project glc \(Cmenos.g4\)'
+	echo '$ ./teste.sh exec \t //generate assembly code of input'
+	echo '$ ./teste.sh clean-all \t //clean all .java / .tokens / .interp from antlr4 and ./class from project'
 fi
 
 
