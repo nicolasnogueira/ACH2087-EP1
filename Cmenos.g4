@@ -81,8 +81,11 @@ retdecl
 	|	'return' expr ';' 
 	;
 expr
-	:	var '=' expr
+	:	assign
 	|	simpexpr 
+	;
+assign
+	:	var '=' expr
 	;
 var
 	:	ID

@@ -6,16 +6,25 @@ import org.antlr.v4.runtime.tree.ParseTreeProperty;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-public class CmenosMipsGenerator extends CmenosBaseListener {
-	int nRegs = 10;
-	int activeRegs;
-	int outputLine;
+class MemoryWord {
+    public boolean rused;  		//true = reg, false = memory
+    public boolean evaluated;	//passou por atribuicao
+    public int address;
 
-	// Dicionario para chamada de funcoes [funcname, label]
-	Map<String, Integer> funcLabels = new HashMap<String, Integer>();
+
+    public MemoryWord(boolean rused, boolean evaluated, int address) { 
+    	this.rused = rused; 
+    	this.evaluated = evaluated;
+    	this.address = address;
+    }
+
+}
+
+public class CmenosMipsGenerator extends CmenosBaseListener {
+	int outputLine;
 	
-	// Tabela de simbolos [varname, indiceregistrador] 
-	Map<String, Integer> varRegs = new HashMap<String, Integer>();
+	// Tabela de simbolos [varname, used, address] 
+	Map<String, MemoryWord> varRegs = new HashMap<String, MemoryWord>();
 
 	// Para retorno de valores
 	Stack<Integer> stack = new Stack<Integer>();
@@ -24,15 +33,105 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	int ifcount;
 	int whilecount;
 
+	// REGISTRADORES
+
+	/*********************************************
+	*
+	*	0 		- zero 		- valor 0
+	*	1 		- $at 		- reservado
+	*	2-3		- $v0-$v1	- valores de retorno
+	*	4-7		- $a0-$a3	- argumentos
+	*	8-15 	- $t0-$t7	- temporarios 
+	*	16-23	- $s0-$s7	- valores salvos
+	*	24-25	- $t8-$t9	- temporarios
+	*	26-27	- $k0-$k1	- reservados
+	*	28		- $gp 		- global pointer
+	*	29		- $sp 		- stack pointer
+	*	30 		- $s8/$fp 	- salvo/frame pointer
+	*	31		- $ra 		- return address (PC)
+	*
+	*********************************************/
+
+	int timesRegAlloc;										// quantidade de vezes que um registrador foi associado a variavel
+	int[] tregs = {8, 9, 10, 11, 12, 13, 14, 15, 24, 25}; 	// temporaries (usado para aritmetica intermediaria)
+	int tregsUsados;
+	int[] sregs = {16, 17, 18, 19, 20, 21, 22, 23};			// saved (usado para variaveis)
+	boolean[] regsUsed = new boolean[31];					// estados dos registradores
+
+
+	public void guardarRegToMem(String variavel, int regpos) {
+		System.out.println("Guardando " + variavel + " de " + regpos + " em ???");
+	}
+
+	public void guardarMemToReg(String variavel, int regpos) {
+		System.out.println("Guardando " + variavel + " de ??? em " + regpos);
+	}
+
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 *	Funcao para obter registrador para variavel ja declarada
+	 *
+	 *	@param variavel		nome da variável a ser utilizada no registrador 
+	 *	@return 			indice do registrador em sregs
+	 *
+	 */	
+	public int getReg(String variavel) {
+		MemoryWord m = varRegs.get(variavel);
+		int pos;
+		if (m == null) { // declaracao
+			pos = timesRegAlloc % sregs.length;
+			if (regsUsed[sregs[pos]] == true) {
+				// colocar a variavel correspondente na memoria **EM MIPS**
+				for (Map.Entry<String, MemoryWord> e : varRegs.entrySet()) {
+					if (e.getValue().rused == true && e.getValue().address == sregs[pos]) {
+						guardarRegToMem(e.getKey(), sregs[pos]/*, memoria */);
+					}
+				}
+			}
+
+			// associar variavel ao registrador livre
+			regsUsed[sregs[pos]] = true;
+			varRegs.put(variavel, new MemoryWord(true, false, sregs[pos])); // nao sofreu atribuicao ainda
+			timesRegAlloc++;
+		} else {
+			if (m.rused) {
+				pos = m.address;
+			} else {
+				pos = timesRegAlloc % sregs.length;
+				if (regsUsed[sregs[pos]] == true) {
+					// colocar a variavel correspondente na memoria **EM MIPS**
+					for (Map.Entry<String, MemoryWord> e : varRegs.entrySet()) {
+						if (e.getValue().rused == true && e.getValue().address == sregs[pos]) {
+							guardarRegToMem(e.getKey(), sregs[pos]/*, memoria */);
+						}
+					}					
+				}
+				// colocar variavel da memória no registrador **EM MIPS**
+				guardarMemToReg(variavel, sregs[pos]/*, memoria */);
+
+				// seria interessante apagar da memoria? mantemos um registro salvo para a variavel?
+
+				// associar variavel a este registrador
+				regsUsed[sregs[pos]] = true;
+				varRegs.put(variavel, new MemoryWord(true, true, sregs[pos]));
+				timesRegAlloc++;
+			}
+		}
+		return pos;
+	}
+
 	/**
 	 * {@inheritDoc}
 	 *
 	 */
 	@Override public void enterProg(CmenosParser.ProgContext ctx) {
 		this.outputLine = 0;
-		this.activeRegs = 0; 
 		this.ifcount = 0;
 		this.whilecount = 0;
+		this.tregsUsados = 0;
+		this.timesRegAlloc = 0;
 	}
 
 	// IF
@@ -153,8 +252,12 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitFundecl(CmenosParser.FundeclContext ctx) { 
-		System.out.println("\tjr\t$ra");
+		if (!ctx.getChild(1).getText().equals("main")){
+			System.out.println("\tjr\t$ra");	
+		}
 	}
+
+	
 
 
 }
