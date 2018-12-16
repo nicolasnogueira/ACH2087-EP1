@@ -56,7 +56,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	int[] tregs = {8, 9, 10, 11, 12, 13, 14, 15, 24, 25}; 	// temporaries (usado para aritmetica intermediaria)
 	int tregsUsados;
 	int[] sregs = {16, 17, 18, 19, 20, 21, 22, 23};			// saved (usado para variaveis)
-	boolean[] regsUsed = new boolean[31];					// estados dos registradores
+	boolean[] regsUsed = new boolean[32];					// estados dos registradores
 
 
 	public void guardarRegToMem(String variavel, int regpos) {
@@ -132,6 +132,17 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 		this.whilecount = 0;
 		this.tregsUsados = 0;
 		this.timesRegAlloc = 0;
+
+		System.out.println("input:");
+		System.out.println("\tli $v0, 5\t# leitura de inteiro");
+		System.out.println("\tsyscall\t\t# valor lido vai ser registrado em $v0");
+		System.out.println("\tjr $ra");
+		System.out.println();
+		System.out.println("output:");
+		System.out.println("\tli $v0, 1");
+		System.out.println("\tsyscall\t\t# o valor deve estar em $a0 antes de acessar a func");
+		System.out.println("\tjr $ra");
+		System.out.println();
 	}
 
 	// IF
@@ -257,7 +268,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 		}
 	}
 
-	
+
 
 
 }
