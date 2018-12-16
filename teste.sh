@@ -7,7 +7,6 @@ if [ "$1" = "antlr4" ]; then
 
 elif [ "$1" = "compile" ]; then
 	javac -cp /usr/local/lib/antlr-4.7.1-complete.jar -d $(pwd)/build/cbuild/ $(pwd)/build/*.java $(pwd)/build/Cmenos/*.java
-	#javac -sourcepath $(pwd)/build/ -cp /usr/local/lib/antlr-4.7.1-complete.jar -d $(pwd)/build/cbuild/ $(pwd)/build/*.java
 
 elif [ "$1" = "tree" ]; then
 	java -cp $(pwd)/build/cbuild/:/usr/local/lib/antlr-4.7.1-complete.jar:. org.antlr.v4.gui.TestRig Cmenos prog -gui < input
