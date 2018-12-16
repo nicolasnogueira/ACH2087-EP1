@@ -6,28 +6,110 @@ import org.antlr.v4.runtime.tree.ParseTreeProperty;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+//import java.util.LinkedList;
+
+class MemoryWord{
+    public boolean used;  //true = reg, false = memory
+    public int address;
+
+    public MemoryWord(boolean used,int address){ this.used = used; this.address = address;}
+
+}
+
+class Environment{
+	
+
+}
+
 public class CmenosMipsGenerator extends CmenosBaseListener {
+
 	int nRegs = 10; // mips = 32
 	int activeRegs;
 	int outputLine;
 	int tMemory = 256;
+	int stackMemory = 0;
 
 	// Dicionario para chamada de funcoes [funcname, label]
-	Map<String, Integer> funcLabels = new HashMap<String, Integer>();
+	//Map<String, Integer> funcLabels = new HashMap<String, Integer>();
 	
 	// Tabela de simbolos [varname, indiceregistrador] 
-	Map<String, Integer> varRegs = new HashMap<String, Integer>();
+	Map<String, MemoryWord> varRegs = new HashMap<String, MemoryWord>();
 
 	// Para retorno de valores
 	Stack<Integer> stack = new Stack<Integer>();
 
+	// Controle dos Registradores
+
+
 	int register[] = new int[nRegs];
-	boolean status[] = new boolean[nRegs];
-	int memory[] new int[tMemory];
+	//boolean status[] = new boolean[nRegs];
+	LinkedList<Integer> memory = new LinkedList<>();
 
 	ParseTreeProperty<Integer> values = new ParseTreeProperty<Integer>();
 	int ifcount;
 	int whilecount;
+
+
+	
+	int obtemReg(String s){
+		MemoryWord m = varRegs.get(s);
+
+		if(m == null){ //declaração de s
+			int pos = varRegs.size() % nRegs;
+			for (Map.Entry<String,MemoryWord> e : varRegs.entrySet()) {
+				if(e.getValue().used == true && e.getValue().address == pos){
+					//mandar register[pos] pra memoria
+					Integer i = new Integer(register[pos]);
+					memory.add(i);
+					e.getValue().used = false;
+					e.getValue().address = memory.indexOf(i);
+					varRegs.put(s,new MemoryWord(true,pos));
+					System.out.println(pos);
+					return pos;
+				}
+			}
+
+			System.out.println(pos);
+			
+			for (int i = 0;i < nRegs ;i++ ) {
+				System.out.println(register[i]);
+			}
+			System.out.println("------------");
+			for (int j = 0;j < varRegs.size() ; j++ ) {
+				System.out.println(varRegs)
+			}
+
+		}else{ //ta na memória
+			if(m.used == false){
+				int pos = m.address % nRegs;
+				for (Map.Entry<String,MemoryWord> e : varRegs.entrySet()) {
+					if(e.getValue().used == true && e.getValue().address == pos){
+						//fazer swap com alguma variavel em registrador
+						Integer i = new Integer(register[pos]);
+						memory.add(i);
+						e.getValue().used = false;
+						e.getValue().address = memory.indexOf(i);
+						memory.get(m.address); //remover da memória
+						varRegs.put(s,new MemoryWord(true,pos)); //por no registrador
+						return pos;
+					}
+				}
+			}else{ //já está em registrador
+				return m.address;
+			}
+		}
+
+		if(varRegs.size() < nRegs){
+			int pos = activeRegs;
+			varRegs.put(s,new MemoryWord(true,pos));
+			activeRegs += 1;
+		}else{
+
+		}
+
+		return -1;
+	}
+
 
 	/**
 	 * {@inheritDoc}
@@ -38,6 +120,10 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 		this.activeRegs = 0; 
 		this.ifcount = 0;
 		this.whilecount = 0;
+
+		System.out.println(obtemReg("a"));
+		System.out.println(obtemReg("b"));
+
 	}
 
 	// IF
@@ -149,7 +235,9 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	@Override public void enterFundecl(CmenosParser.FundeclContext ctx) {
 		System.out.println();
 		System.out.println();
+		//System.out.println("\t jal " + ctx.getChild(1).getText());
 		System.out.println(ctx.getChild(1).getText() + ":");
+		//varRegs.put(ctx.getChild(1).getText(),new MemoryWord())
 	}
 
 	/**
@@ -161,5 +249,28 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 		System.out.println("\tjr\t$ra");
 	}
 
+	// VARIAVEL
+
+	@Override public void enterVardecl(CmenosParser.VardeclContext ctx) { 
+
+	}
+
+	@Override public void exitVardecl(CmenosParser.VardeclContext ctx) { 
+
+	}
+
+	@Override public void enterAtiv(CmenosParser.AtivContext ctx) { 
+		
+	}
+	
+	@Override public void exitAtiv(CmenosParser.AtivContext ctx) { 
+		System.out.println("\tjal " + ctx.getChild(0).getText());	
+	}
+
+	// OPERACAO ARITMETICA
+
+	@Override public void enterSomaexpr(CmenosParser.SomaexprContext ctx) { }
+	
+	@Override public void exitSomaexpr(CmenosParser.SomaexprContext ctx) { }
 
 }
