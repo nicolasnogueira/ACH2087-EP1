@@ -7,9 +7,10 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class CmenosMipsGenerator extends CmenosBaseListener {
-	int nRegs = 10;
+	int nRegs = 10; // mips = 32
 	int activeRegs;
 	int outputLine;
+	int tMemory = 256;
 
 	// Dicionario para chamada de funcoes [funcname, label]
 	Map<String, Integer> funcLabels = new HashMap<String, Integer>();
@@ -19,6 +20,10 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 
 	// Para retorno de valores
 	Stack<Integer> stack = new Stack<Integer>();
+
+	int register[] = new int[nRegs];
+	boolean status[] = new boolean[nRegs];
+	int memory[] new int[tMemory];
 
 	ParseTreeProperty<Integer> values = new ParseTreeProperty<Integer>();
 	int ifcount;
