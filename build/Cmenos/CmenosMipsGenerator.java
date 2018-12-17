@@ -42,27 +42,31 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 
 	// REGISTRADORES
 
-	/*********************************************
+	/****************************************************
 	*
-	*	0 		- zero 		- valor 0
-	*	1 		- $at 		- reservado
-	*	2-3		- $v0-$v1	- valores de retorno
-	*	4-7		- $a0-$a3	- argumentos
-	*	8-15 	- $t0-$t7	- temporarios 
-	*	16-23	- $s0-$s7	- valores salvos
-	*	24-25	- $t8-$t9	- temporarios
-	*	26-27	- $k0-$k1	- reservados
-	*	28		- $gp 		- global pointer
-	*	29		- $sp 		- stack pointer
-	*	30 		- $s8/$fp 	- salvo/frame pointer
-	*	31		- $ra 		- return address (PC)
+	*  0 			- 0 		- valor 0
+	*  1 			- $at 		- reservado
+	*  2-3			- $v0-$v1	- valores de retorno
+	*  4-7			- $a0-$a3	- argumentos
+	*  8-15 		- $t0-$t7	- temporarios 
+	*  16-23		- $s0-$s7	- valores salvos
+	*  24-25		- $t8-$t9	- temporarios
+	*  26-27		- $k0-$k1	- reservados
+	*  28			- $gp 		- global pointer
+	*  29			- $sp 		- stack pointer
+	*  30 			- $s8/$fp 	- salvo/frame pointer
+	*  31			- $ra 		- return address (PC)
 	*
-	*********************************************/
+	****************************************************/
 
 	int timesRegAlloc;										// quantidade de vezes que um registrador foi associado a variavel
 	int[] tregs = {8, 9, 10, 11, 12, 13, 14, 15, 24, 25}; 	// temporaries (usado para aritmetica intermediaria)
 	int tregsUsados;
 	int[] sregs = {16, 17, 18, 19, 20, 21, 22, 23};			// saved (usado para variaveis)
+	String[] nomes = {"zero", "at", "v0", "v1", "a0", "a1", "a2", "a3", "t0", "t1", 
+					 "t2", "t3", "t4", "t5", "t6", "t7", "s0", "s1", "s2", "s3", 
+					 "s4", "s5", "s6", "s7", "t8", "t9", "k0", "k1", "gp", "sp", 
+					 "s8", "ra"};
 	boolean[] regsUsed = new boolean[32];					// estados dos registradores
 
 
@@ -142,7 +146,8 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 		this.whilecount = 0;
 		this.tregsUsados = 0;
 		this.timesRegAlloc = 0;
-
+		System.out.println(".text");
+		System.out.println("\tj main");
 		System.out.println("input:");
 		System.out.println("\tli $v0, 5\t# leitura de inteiro");
 		System.out.println("\tsyscall\t\t# valor lido vai ser registrado em $v0");
@@ -176,7 +181,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	 */
 	@Override public void exitSeldecl(CmenosParser.SeldeclContext ctx) {
 		int id = values.get(ctx);
-		System.out.println("EndIf_ " + id + ":");
+		System.out.println("EndIf_" + id + ":");
 	}
 
 
@@ -186,16 +191,16 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitIffirstpartcond(CmenosParser.IffirstpartcondContext ctx) {
-		//System.out.println("\tResolve condição.");
+		
 		ParserRuleContext ctxGParent = ctx.getParent().getParent();
 		int id = values.get(ctxGParent);
 		int regresult = stack.pop();
 		if (ctxGParent.getChildCount() == 2) {
 			// estamos em um if com else
-			System.out.println("\tbeq $" + regresult + ", 1, ElseIf_" + id  + " # se falso vai para else");
+			System.out.println("\tbeq $" + nomes[regresult] + ", 1, ElseIf_" + id  + " # se falso vai para else");
 		} else {
 			// estamos em um if sem else
-			System.out.println("\tbeq $" + regresult + ", 1, EndIf_" + id + "# se falso vai para saida");
+			System.out.println("\tbeq $" + nomes[regresult] + ", 1, EndIf_" + id + "# se falso vai para saida");
 		}	
 	}
 	
@@ -244,10 +249,13 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitWhilefirstpart(CmenosParser.WhilefirstpartContext ctx) {
-		System.out.println("\tResolve condição.");
+		System.out.println("\t# Resolve condição.");
 		ParserRuleContext ctxParent = ctx.getParent();
 		int id = values.get(ctxParent);
-		System.out.println("\tbeq reg1, reg2, EndWhile_" + id  + " # se falso vai para o fim do while");
+		int regresult = stack.pop();
+		System.out.println("\tbeq $" + nomes[regresult] + ", 1, ElseIf_" + id  + " # se falso vai para o fim do while");
+
+
 	}
 
 
@@ -260,7 +268,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	 */
 	@Override public void enterParam(CmenosParser.ParamContext ctx) { 
 		int varreg = getReg(ctx.getChild(1).getText());
-		System.out.println("\taddi $" + varreg + ", $a" + nargsRead + ", $zero");
+		System.out.println("\taddi $" + nomes[varreg] + ", $a" + nargsRead + ", 0");
 		nargsRead++;
 	}
 
@@ -305,11 +313,20 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	@Override public void exitRetdecl(CmenosParser.RetdeclContext ctx) { 
 		if (ctx.getChildCount() == 3) {
 			int regresult = stack.pop();
-			System.out.println("\tli $v0, $" + regresult);
+			System.out.println("\tmove $v0, $" + nomes[regresult]);
 		}
 	}
 
-
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitArglist(CmenosParser.ArglistContext ctx) { 
+		int regresult = stack.pop();
+		System.out.println("\tmove $a" + nargsWrite + ", $" + nomes[regresult]);
+		nargsWrite++;
+	}
 
 
 	// DECLARACAO
@@ -338,7 +355,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 		}
 		int regsalve = getReg(ctx.getChild(0).getText());
 		int result = stack.pop();
-		System.out.println("\tli $" + regsalve + ", $" + result);
+		System.out.println("\tmove $" + nomes[regsalve] + ", $" + nomes[result]);
 	}
 
 
@@ -355,19 +372,18 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 			int left = stack.pop();
 			int regresult = left;
 			if (ctx.getChild(1).getText().equals("<=")) {
-				System.out.println("\tsle $" + regresult + ", $" + left + ", $" + right);
+				System.out.println("\tsle $" + nomes[regresult] + ", $" + nomes[left] + ", $" + nomes[right]);
 			} else if (ctx.getChild(1).getText().equals("<")){
-				System.out.println("\tslt $" + regresult + ", $" + left + ", $" + right);
+				System.out.println("\tslt $" + nomes[regresult] + ", $" + nomes[left] + ", $" + nomes[right]);
 			} else if (ctx.getChild(1).getText().equals(">")){
-				System.out.println("\tsgt $" + regresult + ", $" + left + ", $" + right);
+				System.out.println("\tsgt $" + nomes[regresult] + ", $" + nomes[left] + ", $" + nomes[right]);
 			} else if (ctx.getChild(1).getText().equals(">=")){
-				System.out.println("\tsge $" + regresult + ", $" + left + ", $" + right);
+				System.out.println("\tsge $" + nomes[regresult] + ", $" + nomes[left] + ", $" + nomes[right]);
 			} else if (ctx.getChild(1).getText().equals("==")){
-				System.out.println("\tseq $" + regresult + ", $" + left + ", $" + right);
+				System.out.println("\tseq $" + nomes[regresult] + ", $" + nomes[left] + ", $" + nomes[right]);
 			} else if (ctx.getChild(1).getText().equals("!=")){
-				System.out.println("\tsne $" + regresult + ", $" + left + ", $" + right);
+				System.out.println("\tsne $" + nomes[regresult] + ", $" + nomes[left] + ", $" + nomes[right]);
 			}
-			//System.out.println("INSERIU!");
 			stack.push(regresult);
 		}
 	}
@@ -382,23 +398,22 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 			// para int por enquanto
 			if (ctx.NUM() != null) {
 
-				System.out.println("\taddi $" + tregs[stack.size() % tregs.length] + ", $zero, " + ctx.getChild(0).getText());
-				//System.out.println("INSERIU " + tregs[stack.size() % tregs.length] + " TAMPILHAANTES:" + stack.size());
+				System.out.println("\tadd $" + nomes[tregs[stack.size() % tregs.length]] + ", $zero, " + ctx.getChild(0).getText());
 				stack.push(tregs[stack.size() % tregs.length]);
 
 			} else if (ctx.var() != null) {
 				MemoryWord m = varRegs.get(ctx.var().getText()); // deve existir
 				// acessando a variavel no registrador dele
 				int regvar = getReg(ctx.var().getText());
-				System.out.println("\tli $" + tregs[stack.size() % tregs.length] + ", $" + regvar);
-				//System.out.println("INSERIU " + regvar + "VAR " + ctx.var().getText() + " TAMPILHAANTES:" + stack.size());
+				System.out.println("\tmove $" + nomes[tregs[stack.size() % tregs.length]] + ", $" + nomes[regvar]);
 				stack.push(tregs[stack.size() % tregs.length]);
 
 			} else if (ctx.ativ() != null) {
 				// salvar as variaveis de argumentos
 				System.out.println("\tjal " + ctx.getChild(0).getChild(0).getText());
-				System.out.println("\taddi $" + tregs[stack.size() % tregs.length] + ", $zero, $v0");
+				System.out.println("\tadd $" + nomes[tregs[stack.size() % tregs.length]] + ", $zero, $v0");
 				stack.push(tregs[stack.size() % tregs.length]);
+				nargsWrite = 0;
 
 			}
 			
@@ -417,16 +432,15 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 			int regresult = left;
 			if (ctx.getChild(1).getText().equals("*")) {
 				// mult
-				System.out.println("\tmult $" + left + ", $" + right);
-				System.out.println("\tmflo $" + regresult);
+				System.out.println("\tmult $" + nomes[left] + ", $" + nomes[right]);
+				System.out.println("\tmflo $" + nomes[regresult]);
 			} else {
 				// div
-				System.out.println("\tdiv $" + left + ", $" + right);
+				System.out.println("\tdiv $" + nomes[left] + ", $" + nomes[right]);
 
-				// é possível comparar com zero para dar erro 
-				System.out.println("\tmflo $" + regresult);
+				// é possível comparar com 0 para dar erro 
+				System.out.println("\tmflo $" + nomes[regresult]);
 			}
-			//System.out.println("inseriu!");
 			stack.push(regresult);
 		}
 	}
@@ -443,12 +457,11 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 			int regresult = left;
 			if (ctx.getChild(1).getText().equals("+")) {
 				// add
-				System.out.println("\tadd $" + regresult + ", $" + left + ", $" + right);
+				System.out.println("\tadd $" + nomes[regresult] + ", $" + nomes[left] + ", $" + nomes[right]);
 			} else {
 				// sub
-				System.out.println("\tsub $" + regresult + ", $" + left + ", $" + right);
+				System.out.println("\tsub $" + nomes[regresult] + ", $" + nomes[left] + ", $" + nomes[right]);
 			}
-			//System.out.println("inseriu!");
 			stack.push(regresult);
 		}
 	}
