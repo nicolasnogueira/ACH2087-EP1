@@ -154,7 +154,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 		System.out.println("\tjr $ra");
 		System.out.println();
 		System.out.println("output:");
-		System.out.println("\tli $v0, 1");
+		System.out.println("\tli $v0, 4");
 		System.out.println("\tsyscall\t\t# o valor deve estar em $a0 antes de acessar a func");
 		System.out.println("\tjr $ra");
 		System.out.println();
@@ -398,7 +398,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 			// para int por enquanto
 			if (ctx.NUM() != null) {
 
-				System.out.println("\tadd $" + nomes[tregs[stack.size() % tregs.length]] + ", $zero, " + ctx.getChild(0).getText());
+				System.out.println("\taddi $" + nomes[tregs[stack.size() % tregs.length]] + ", $zero, " + ctx.getChild(0).getText());
 				stack.push(tregs[stack.size() % tregs.length]);
 
 			} else if (ctx.var() != null) {
