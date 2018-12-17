@@ -9,11 +9,20 @@ Victor Emerenciano
 Os seguintes comandos são utilizados para executar o programa:
 
 ```
-$ ./teste.sh path 					// checar estrutura de diretorios
-$ ./teste.sh antlr4 				// gerar o projeto da glc Cmenos.g4
-$ ./teste.sh compile 				// compilar os arquivos da glc Cmenos.g4
-$ ./teste.sh tree 					// visualizar arvore para arquivo input
-$ ./teste.sh exec > output.asm		// gera codigo MIPS para o arquivo input, salvando em output.asm
+// checar estrutura de diretorios
+$ ./teste.sh path 				
+
+// gerar o projeto da glc Cmenos.g4	
+$ ./teste.sh antlr4
+
+// compilar os arquivos da glc Cmenos.g4			
+$ ./teste.sh compile 				
+
+// visualizar arvore para arquivo input
+$ ./teste.sh tree 				
+
+// gera codigo MIPS para o arquivo input, salvando em output.asm	
+$ ./teste.sh exec > output.asm		
 ```
 
 
