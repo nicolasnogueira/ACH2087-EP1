@@ -6,6 +6,8 @@ import org.antlr.v4.runtime.tree.ParseTreeProperty;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+
+// contem informacoes sobre uma variavel na tabela de simbolos
 class MemoryWord {
     public boolean rused;  		//true = reg, false = memory
     public boolean evaluated;	//passou por atribuicao
@@ -31,12 +33,15 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	// Para armazenamento de argumentos e retorno
 	Map<String, Stack<Integer>> funcstack = new HashMap<String, Stack<Integer>>();
 
+	// Ajuda a compartilhar informacao entre enterNode e exitNode para uma subarvore
 	ParseTreeProperty<Integer> values = new ParseTreeProperty<Integer>();
 
+	// Stack para variaveis temporarias
 	private Stack<Integer> stack = new Stack<Integer>();
 	int nargsRead = 0;
 	int nargsWrite = 0;
 
+	// Contador de labels condicionais
 	int ifcount;
 	int whilecount;
 
@@ -63,6 +68,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	int[] tregs = {8, 9, 10, 11, 12, 13, 14, 15, 24, 25}; 	// temporaries (usado para aritmetica intermediaria)
 	int tregsUsados;
 	int[] sregs = {16, 17, 18, 19, 20, 21, 22, 23};			// saved (usado para variaveis)
+	int smax = 0;
 	String[] nomes = {"zero", "at", "v0", "v1", "a0", "a1", "a2", "a3", "t0", "t1", 
 					 "t2", "t3", "t4", "t5", "t6", "t7", "s0", "s1", "s2", "s3", 
 					 "s4", "s5", "s6", "s7", "t8", "t9", "k0", "k1", "gp", "sp", 
@@ -72,11 +78,11 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 
 	// Nao funcional
 	public void guardarRegToMem(String variavel, int regpos) {
-		System.out.println("Guardando " + variavel + " de " + regpos + " em ???");
+		//System.out.println("Guardando " + variavel + " de " + regpos + " em ???");
 	}
 
 	public void guardarMemToReg(String variavel, int regpos) {
-		System.out.println("Guardando " + variavel + " de ??? em " + regpos);
+		//System.out.println("Guardando " + variavel + " de ??? em " + regpos);
 	}
 
 
@@ -136,9 +142,18 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 		return sregs[pos];
 	}
 
+	 /*
+	 *
+	 *	As funcoes a seguir de nome enter.* e exit.* sao dedicadas a geracao de
+	 *  codigo a partir da exploracao da arvore, todas sobrescrevem metodos de 
+	 *  CmenosBaseListener.
+	 *	
+	 *
+	 */	
+
 	/**
 	 * {@inheritDoc}
-	 *
+	 *	<p>Entra no programa</p>
 	 */
 	@Override public void enterProg(CmenosParser.ProgContext ctx) {
 		this.outputLine = 0;
@@ -154,13 +169,13 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 		System.out.println("\tjr $ra");
 		System.out.println();
 		System.out.println("output:");
-		System.out.println("\tli $v0, 4");
+		System.out.println("\tli $v0, 1");
 		System.out.println("\tsyscall\t\t# o valor deve estar em $a0 antes de acessar a func");
 		System.out.println("\tjr $ra");
 		System.out.println();
 	}
 
-	// IF
+	// Funcoes acerca da estrutura IF
 	
 	/**
 	 * {@inheritDoc}
@@ -184,11 +199,9 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 		System.out.println("EndIf_" + id + ":");
 	}
 
-
 	/**
 	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+	 *	<p>Sai da condicao do IF</p>
 	 */
 	@Override public void exitIffirstpartcond(CmenosParser.IffirstpartcondContext ctx) {
 		
@@ -207,7 +220,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Entra no else de um if, para estruturas if-else</p>
 	 */
 	@Override public void enterIfsecondpart(CmenosParser.IfsecondpartContext ctx) { 
 		ParserRuleContext ctxParent = ctx.getParent();
@@ -217,7 +230,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 
 
 
-	// WHILE
+	// Funcoes acerca da estrutura WHILE
 
 	/**
 	 * {@inheritDoc}
@@ -246,7 +259,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Sai da condicao do while.</p>
 	 */
 	@Override public void exitWhilefirstpart(CmenosParser.WhilefirstpartContext ctx) {
 		System.out.println("\t# Resolve condição.");
@@ -259,12 +272,12 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	}
 
 
-	// FUNCAO
+	// Funcoes acerca do tratamento de FUNCAO
 
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Visita argumento.</p>
 	 */
 	@Override public void enterParam(CmenosParser.ParamContext ctx) { 
 		int varreg = getReg(ctx.getChild(1).getText());
@@ -275,7 +288,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Sai de argumentos.</p>
 	 */
 	@Override public void exitParams(CmenosParser.ParamsContext ctx) { 
 		nargsRead = 0;
@@ -284,20 +297,39 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Entra na funcao.</p>
 	 */
 	@Override public void enterFundecl(CmenosParser.FundeclContext ctx) {
 		System.out.println();
 		System.out.println(ctx.getChild(1).getText() + ":");
+
+		if (!ctx.getChild(1).getText().equals("main")) {
+			System.out.println("\taddi $sp, $sp, -" + (sregs.length + 1)*4);
+			System.out.println("\tsw $ra, 0($sp)");
+			int count = 4;
+			for (int i = 0; i < sregs.length; i++) {
+				System.out.println("\tsw $" + nomes[sregs[i]] + ", " + count + "($sp)");
+				count += 4;
+			}
+		}
 	}
 
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Sai da funcao.</p>
 	 */
 	@Override public void exitFundecl(CmenosParser.FundeclContext ctx) { 
 		if (!ctx.getChild(1).getText().equals("main")){
+			System.out.println("\tlw $ra, 0($sp)");
+			int count = 4;
+			for (int i = 0; i < sregs.length; i++) {
+				System.out.println("\tlw $" + nomes[sregs[i]] + ", " + count + "($sp)");
+				count += 4;
+			}
+			System.out.println("\taddi $sp, $sp, " + (sregs.length + 1)*4);
+
+
 			System.out.println("\tjr\t$ra");	
 		} else {
 			System.out.println("\tli $v0, 10");
@@ -308,7 +340,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Sai do retorno de funcao.</p>
 	 */
 	@Override public void exitRetdecl(CmenosParser.RetdeclContext ctx) { 
 		if (ctx.getChildCount() == 3) {
@@ -320,7 +352,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Sai da lista de argumentos de um call (ativ).</p>
 	 */
 	@Override public void exitArglist(CmenosParser.ArglistContext ctx) { 
 		int regresult = stack.pop();
@@ -329,12 +361,12 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	}
 
 
-	// DECLARACAO
+	// Funcoes acerca de Declaracao.
 
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Entra declaracao de var.</p>
 	 */
 	@Override public void enterVardecl(CmenosParser.VardeclContext ctx) {
 		//String nome = ctx.getChild(0).getText(); 
@@ -342,12 +374,12 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	}
 
 
-	// ATRIBUICAO
+	// Funcoes acerca de Atribuicao.
 
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Sai de uma atribuicao.</p>
 	 */
 	@Override public void exitAssign(CmenosParser.AssignContext ctx) {
 		if (varDecl.get(ctx.getChild(0).getText()) == null) {
@@ -359,12 +391,12 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	}
 
 
-	// ARITMETICA
+	// Funcoes acerca de ARITMETICA
 
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Sai de uma expressao de comparacao.</p>
 	 */
 	@Override public void exitSimpexpr(CmenosParser.SimpexprContext ctx) {
 		if (ctx.getChildCount() == 3) {
@@ -391,7 +423,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>The default implementation does nothing.</p>
+	 * <p>Sai de um fator (possivel node da arvore).</p>
 	 */
 	@Override public void exitFator(CmenosParser.FatorContext ctx) { 
 		if (ctx.getChildCount() == 1) {
@@ -423,7 +455,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * FEITO
+	 * <p>Sai de um termo (possivel operacao multiplicativa/divisao).</p>
 	 */
 	@Override public void exitTermo(CmenosParser.TermoContext ctx) { 
 		if (ctx.getChildCount() == 3) {
@@ -448,7 +480,7 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * FEITO
+	 * <p>Sai de uma expressao de soma (possivel operacao adicao/subtracao).</p>
 	 */
 	@Override public void exitSomaexpr(CmenosParser.SomaexprContext ctx) { 
 		if (ctx.getChildCount() == 3) {
