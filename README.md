@@ -25,6 +25,12 @@ $ ./teste.sh tree
 $ ./teste.sh exec > output.asm		
 ```
 
+## Organização do projeto (arquivos relevantes)
+
+- **build**: possui arquivos gerados pelo ANTLR a serem compilados.
+- **build/Cmenos**: possui os arquivos criados para percorrer a árvore e gerar o código.
+- **build/cbuild**: possui os arquivos .class gerados pelo ANTLR.
+- **Cmenos.g4**: gramática para a linguagem Cmenos.
 
 
 Referências
