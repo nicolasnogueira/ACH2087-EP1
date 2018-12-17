@@ -26,10 +26,15 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	// Tabela de simbolos [varname, used, address] 
 	Map<String, MemoryWord> varRegs = new HashMap<String, MemoryWord>();
 
+	Map<String, String> varDecl = new HashMap<String, String>(); // so pra checar se uma var ta sendo usada apos declaracao
+
 	// Para retorno de valores
-	Stack<Integer> stack = new Stack<Integer>();
+	Stack<Integer> funcstack = new Stack<Integer>();
 
 	ParseTreeProperty<Integer> values = new ParseTreeProperty<Integer>();
+
+	private Stack<Integer> stack = new Stack<Integer>();
+
 	int ifcount;
 	int whilecount;
 
@@ -269,6 +274,86 @@ public class CmenosMipsGenerator extends CmenosBaseListener {
 	}
 
 
+	// ATRIBUICAO
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAssign(CmenosParser.AssignContext ctx) {
+		if (varDecl.get(ctx.getChild(0).getText()) == null) {
+			System.out.println("ERRO! Variavel nao declarada!");
+		}
+		int regsalve = getReg(ctx.getChild(0).getText());
+		int result = stack.pop();
+		System.out.println("\tli $" + regsalve + ", $" + result);
+	}
+
+	// ARITMETICA
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFator(CmenosParser.FatorContext ctx) { 
+		if (ctx.getChildCount() == 1) {
+			// para int por enquanto
+			if (ctx.NUM() != null) {
+				System.out.println("\taddi $" + tregs[stack.size()] + ", $zero, " + ctx.getChild(0).getText());
+				System.out.println("INSERIU " + tregs[stack.size()] + " TAMPILHA:" + stack.size());
+			} else {
+				System.out.println("INSERIU " + ctx.getChild(0).getText() + " TAMPILHA:" + stack.size());
+			}
+			stack.push(tregs[stack.size()]);
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTermo(CmenosParser.TermoContext ctx) { 
+		if (ctx.getChildCount() == 3) {
+			int right = stack.pop();
+			int left = stack.pop();
+			int regresult = left;
+			if (ctx.getChild(1).getText().equals("*")) {
+				// mult
+				System.out.println("\tmult $" + left + ", $" + right);
+				System.out.println("\tmflo $" + regresult);
+			} else {
+				// div
+				System.out.println("\tdiv $" + left + ", $" + right);
+
+				// é possível comparar com zero para dar erro 
+				System.out.println("\tmflo $" + regresult);
+			}
+			stack.push(regresult);
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSomaexpr(CmenosParser.SomaexprContext ctx) { 
+		if (ctx.getChildCount() == 3) {
+			int right = stack.pop();
+			int left = stack.pop();
+			int regresult = left;
+			if (ctx.getChild(1).getText().equals("+")) {
+				// add
+				System.out.println("\tadd $" + regresult + ", $" + left + ", $" + right);
+			} else {
+				// sub
+				System.out.println("\tsub $" + regresult + ", $" + left + ", $" + right);
+			}
+			stack.push(regresult);
+		}
+	}
 
 }
