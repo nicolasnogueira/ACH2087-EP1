@@ -11,18 +11,6 @@ public class CmenosMips {
         CmenosParser parser = new CmenosParser(tokens);
         ParseTree tree = parser.prog(); // prog is the starting rule
 
-        //System.out.println("Tree:");
-        //System.out.println(tree.toStringTree(parser));
-        //System.out.println();
-
-        /*System.out.println("Visitor:");
-        EvalVisitor evalByVisitor = new EvalVisitor();
-        evalByVisitor.visit(tree);
-        System.out.println();*/
-
-        //System.out.println("Listener:");
-        //System.out.println();
-        //System.out.println();
         ParseTreeWalker walker = new ParseTreeWalker();
         CmenosMipsGenerator evalByListener = new CmenosMipsGenerator();
         walker.walk(evalByListener, tree);
