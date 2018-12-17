@@ -9,6 +9,8 @@ int gcd (int u, int v)
 
 void main(void)
 {	int x; int y;
+	x = 1 + 2 * 3 + (5 - 9 * 3)
 	x = input(); y = input();
 	output(gcd(x,y));
 }
+
